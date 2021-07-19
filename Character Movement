@@ -1,47 +1,123 @@
-for cpp code for character movement
+CPPsurvivalPlayer.cpp
 
-bUseControllerRotationPitch = false;
+#include "CPPsurvivalPlayer.h"
+
+// Sets default values
+ACPPsurvivalPlayer::ACPPsurvivalPlayer()
+{
+ 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryActorTick.bCanEverTick = true;
+
+	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	//GetCharacterMovement()->bOrientRotationToMovement = false;
-	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
 	GetCharacterMovement()->JumpZVelocity = 600.0f;
 	GetCharacterMovement()->AirControl = 0.2f;
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
+	TPPSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("TPPSpringArm"));
+	TPPSpringArm->SetupAttachment(RootComponent);
 
-	CameraBoom->TargetArmLength = 300.0f;
-	CameraBoom->bUsePawnControlRotation = true;
+	TPPSpringArm->TargetArmLength = 250.0f;
+	TPPSpringArm->bUsePawnControlRotation = true;
 
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	TPPCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("TPPCamera"));
+	TPPCamera->SetupAttachment(TPPSpringArm, USpringArmComponent::SocketName);
+	TPPCamera->bUsePawnControlRotation = false;
 
-	FollowCamera->bUsePawnControlRotation = false;
-  
-  now to into .h of code
-  in between #include "GameFramework/Character.h" and #include "SurvivalPlayer.generated.h" add these and in between or else you will get errors
-  
+}
+
+void ACPPsurvivalPlayer::MoveForward(float Axis)
+{
+	FRotator Rotation = Controller->GetControlRotation();
+	FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
+
+	FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	AddMovementInput(Direction, Axis);
+}
+
+void ACPPsurvivalPlayer::MoveRight(float Axis)
+{
+	FRotator Rotation = Controller->GetControlRotation();
+	FRotator YawRotation(0.0f, Rotation.Yaw, 0.0f);
+
+	FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	AddMovementInput(Direction, Axis);
+}
+
+// Called when the game starts or when spawned
+void ACPPsurvivalPlayer::BeginPlay()
+{
+	Super::BeginPlay();
+	
+}
+
+// Called every frame
+void ACPPsurvivalPlayer::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+}
+
+// Called to bind functionality to input
+void ACPPsurvivalPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+
+	PlayerInputComponent->BindAxis("MoveForward", this, &ACPPsurvivalPlayer::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &ACPPsurvivalPlayer::MoveRight);
+}
+
+CPPsurvivalPlayer.h
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Character.h"
+
 #include "Components/InputComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
-underneath 
+#include "CPPsurvivalPlayer.generated.h"
+
+UCLASS()
+class PAKISTAN2047_API ACPPsurvivalPlayer : public ACharacter
+{
+	GENERATED_BODY()
+
 public:
 	// Sets default values for this character's properties
-	ASurvivalPlayer(); 
-  
-  write this
-  
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = Camera)
-		USpringArmComponent* CameraBoom;
+	ACPPsurvivalPlayer();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, category = Camera)
-		UCameraComponent* FollowCamera;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		USpringArmComponent* TPPSpringArm;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		UCameraComponent* TPPCamera;
 
 	void MoveForward(float Axis);
 	void MoveRight(float Axis);
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+public:	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+};
